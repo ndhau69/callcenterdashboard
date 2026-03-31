@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Tổng Đài — 01/2025 đến 03/2026</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif; background: #f5f5f3; padding: 24px; color: #1a1a18; }
+.dash { max-width: 1100px; margin: 0 auto; }
+.title { font-size: 20px; font-weight: 700; color: #1a1a18; margin-bottom: 4px; letter-spacing: -0.3px; }
+.subtitle { font-size: 13px; color: #5f5e5a; margin-bottom: 20px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 20px; }
+.kpi { background: #f1efe8; border-radius: 8px; padding: 14px 16px; }
+.kpi-label { font-size: 12px; color: #5f5e5a; margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 500; color: #1a1a18; }
+.kpi-sub { font-size: 11px; color: #888780; margin-top: 2px; }
+.kpi-value.green { color: #1D9E75; }
+.kpi-value.red { color: #E24B4A; }
+.kpi-value.blue { color: #185FA5; }
+.kpi-value.amber { color: #BA7517; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.chart-card { background: #ffffff; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 12px; padding: 16px; }
+.chart-card.full { grid-column: 1 / -1; }
+.chart-title { font-size: 13px; font-weight: 700; color: #1a1a18; margin-bottom: 14px; letter-spacing: -0.1px; }
+.agent-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.agent-table th { text-align: left; padding: 8px 10px; color: #5f5e5a; font-weight: 500; border-bottom: 0.5px solid rgba(0,0,0,0.15); font-size: 11px; }
+.agent-table td { padding: 8px 10px; border-bottom: 0.5px solid rgba(0,0,0,0.1); color: #1a1a18; }
+.agent-table tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+.badge-green { background: #EAF3DE; color: #3B6D11; }
+.badge-red { background: #FCEBEB; color: #A32D2D; }
+.badge-amber { background: #FAEEDA; color: #854F0B; }
+.bar-bg { background: #f1efe8; border-radius: 3px; height: 6px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="dash">
+  <p class="title">Dashboard tổng đài — 01/2025 đến 03/2026</p>
+  <p class="subtitle">Phân tích hiệu suất theo agent • Tổng hợp toàn bộ giai đoạn</p>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Tổng cuộc gọi</div>
+      <div class="kpi-value blue">25.875</div>
+      <div class="kpi-sub">21.023 gọi đến + 4.852 gọi đi</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Tỷ lệ nhấc máy</div>
+      <div class="kpi-value green">56,4%</div>
+      <div class="kpi-sub">14.097 / 21.023 cuộc gọi đến</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Tỷ lệ nhỡ máy</div>
+      <div class="kpi-value red">43,6%</div>
+      <div class="kpi-sub">6.926 cuộc gọi bị nhỡ</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">TB thời gian chờ</div>
+      <div class="kpi-value amber">13,5s</div>
+      <div class="kpi-sub">TB đàm thoại: 2p 05s</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Phân phối cuộc gọi đến theo agent</div>
+      <div style="position: relative; height: 240px;">
+        <canvas id="chartIncoming"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Tỷ lệ nhấc máy vs nhỡ theo agent (%)</div>
+      <div style="position: relative; height: 240px;">
+        <canvas id="chartRate"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Thời gian đàm thoại trung bình (giây)</div>
+      <div style="position: relative; height: 200px;">
+        <canvas id="chartAvgTalk"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Thời gian chờ trung bình (giây)</div>
+      <div style="position: relative; height: 200px;">
+        <canvas id="chartWait"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card full" style="margin-bottom: 14px;">
+    <div class="chart-title">Nhận xét & đánh giá</div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 0;">
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #1a1a18; margin-bottom: 8px;">Tổng quan hiệu suất</div>
+        <p style="font-size: 12px; color: #444441; line-height: 1.7;">Toàn hệ thống xử lý <strong>25.875 cuộc gọi</strong> trong giai đoạn 01/2025–03/2026, trong đó 21.023 cuộc gọi đến và 4.852 cuộc gọi đi. Tỷ lệ nhấc máy tổng thể chỉ đạt <strong>56,4%</strong> — đây là con số đáng lo ngại, đồng nghĩa gần 1 trong 2 cuộc gọi đến bị bỏ lỡ.</p>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #1a1a18; margin-bottom: 8px;">Thời gian xử lý</div>
+        <p style="font-size: 12px; color: #444441; line-height: 1.7;"><strong>han.nguyen</strong> có thời gian đàm thoại trung bình cao nhất (3p 18s), có thể là nguyên nhân gây nghẽn và tăng tỷ lệ nhỡ. <strong>tuan.le</strong> có thời gian đàm thoại thấp nhất (1p 27s) nhưng tỷ lệ nhấc máy cũng thấp nhất — khả năng không đủ thời gian xử lý hoặc phân bổ ca không phù hợp. Thời gian chờ trung bình cao nhất ở <strong>tuan.le</strong> (18,4s) và <strong>nga.nguyen</strong> (17,4s).</p>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #1a1a18; margin-bottom: 8px;">Xếp hạng agent</div>
+        <p style="font-size: 12px; color: #444441; line-height: 1.7;">
+          <span style="display:inline-block; background:#EAF3DE; color:#3B6D11; font-size:10px; padding:1px 6px; border-radius:4px; font-weight:600; margin-bottom:4px;">Tốt ≥75%</span><br>
+          <strong>nga.huynh</strong> (82,5%) và <strong>an2.nguyen</strong> (84,2%) là hai trụ cột chính, chiếm phần lớn khối lượng gọi đến và có tỷ lệ xử lý xuất sắc. <strong>vu.tran</strong> (80,8%) cũng ở mức tốt dù lượng cuộc gọi ít hơn.<br><br>
+          <span style="display:inline-block; background:#FAEEDA; color:#854F0B; font-size:10px; padding:1px 6px; border-radius:4px; font-weight:600; margin-bottom:4px;">Trung bình 50–75%</span><br>
+          <strong>nga.nguyen</strong> (53,7%) xử lý khối lượng lớn (~3.757 cuộc) nhưng để nhỡ gần 1.741 cuộc — cần theo dõi nguyên nhân.<br><br>
+          <span style="display:inline-block; background:#FCEBEB; color:#A32D2D; font-size:10px; padding:1px 6px; border-radius:4px; font-weight:600; margin-bottom:4px;">Cần cải thiện &lt;50%</span><br>
+          <strong>han.nguyen</strong> (43,8%), <strong>duong.nguyen</strong> (31,3%) và <strong>tuan.le</strong> (31,2%) có tỷ lệ nhỡ rất cao, đặc biệt <strong>han.nguyen</strong> với 2.435 cuộc nhỡ — con số lớn nhất toàn đội.
+        </p>
+      </div>
+
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #1a1a18; margin-bottom: 8px;">Khuyến nghị</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="min-width:20px; height:20px; border-radius:50%; background:#E6F1FB; color:#185FA5; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">1</div>
+            <p style="font-size:12px; color:#444441; line-height:1.7;">Ưu tiên đào tạo/hỗ trợ <strong>han.nguyen</strong>, <strong>duong.nguyen</strong>, <strong>tuan.le</strong> để cải thiện tỷ lệ nhấc máy.</p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="min-width:20px; height:20px; border-radius:50%; background:#E6F1FB; color:#185FA5; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">2</div>
+            <p style="font-size:12px; color:#444441; line-height:1.7;">Xem xét phân bổ lại ca/giờ để giảm tải cho các agent có lượng gọi cao.</p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="min-width:20px; height:20px; border-radius:50%; background:#E6F1FB; color:#185FA5; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</div>
+            <p style="font-size:12px; color:#444441; line-height:1.7;">Tỷ lệ nhỡ máy tổng thể 43,6% cần có giải pháp cấp bách — có thể cân nhắc thêm nhân lực hoặc hệ thống callback tự động.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="chart-card full" style="margin-bottom: 14px;">
+    <div class="chart-title">Bảng chi tiết hiệu suất từng agent</div>
+    <table class="agent-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Gọi đến</th>
+          <th>Nhấc máy</th>
+          <th>Nhỡ</th>
+          <th>Gọi đi</th>
+          <th>Tổng</th>
+          <th>% Nhấc máy</th>
+          <th>TB đàm thoại</th>
+          <th>TB chờ</th>
+          <th>Đánh giá</th>
+        </tr>
+      </thead>
+      <tbody id="agentTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const agents = [
+  { name: 'an2.nguyen',   incoming: 4863, answered: 4096, missed: 767,  outgoing: 1553, total: 6416, pAnswer: 84.2, pMiss: 15.8, avgTalk: 177, avgWait: 9.1 },
+  { name: 'duong.nguyen', incoming: 595,  answered: 186,  missed: 409,  outgoing: 145,  total: 740,  pAnswer: 31.3, pMiss: 68.7, avgTalk: 133, avgWait: 17.8 },
+  { name: 'han.nguyen',   incoming: 4332, answered: 1897, missed: 2435, outgoing: 643,  total: 4975, pAnswer: 43.8, pMiss: 56.2, avgTalk: 198, avgWait: 11.9 },
+  { name: 'nga.huynh',    incoming: 6704, answered: 5528, missed: 1176, outgoing: 1767, total: 8471, pAnswer: 82.5, pMiss: 17.5, avgTalk: 135, avgWait: 5.9 },
+  { name: 'nga.nguyen',   incoming: 3757, answered: 2016, missed: 1741, outgoing: 567,  total: 4324, pAnswer: 53.7, pMiss: 46.3, avgTalk: 158, avgWait: 17.4 },
+  { name: 'tuan.le',      incoming: 494,  answered: 154,  missed: 340,  outgoing: 71,   total: 565,  pAnswer: 31.2, pMiss: 68.8, avgTalk: 87,  avgWait: 18.4 },
+  { name: 'vu.tran',      incoming: 271,  answered: 219,  missed: 52,   outgoing: 103,  total: 374,  pAnswer: 80.8, pMiss: 19.2, avgTalk: 155, avgWait: 8.5 },
+];
+
+const colors = { blue:'#378ADD', red:'#E24B4A', green:'#639922', amber:'#BA7517' };
+
+function fmtTalk(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.round(s % 60);
+  return m > 0 ? `${m}p ${sec.toString().padStart(2,'0')}s` : `${sec}s`;
+}
+
+function getBadge(p) {
+  if (p >= 75) return `<span class="badge badge-green">Tốt</span>`;
+  if (p >= 50) return `<span class="badge badge-amber">Trung bình</span>`;
+  return `<span class="badge badge-red">Cần cải thiện</span>`;
+}
+
+function makeBar(pct, color) {
+  return `<div style="display:flex;align-items:center;gap:6px;"><div class="bar-bg" style="flex:1;"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div><span style="font-size:11px;min-width:36px;text-align:right;">${pct.toFixed(1)}%</span></div>`;
+}
+
+const tbody = document.getElementById('agentTableBody');
+agents.forEach(a => {
+  const tr = document.createElement('tr');
+  const barColor = a.pAnswer >= 75 ? colors.green : a.pAnswer >= 50 ? colors.amber : colors.red;
+  tr.innerHTML = `
+    <td><strong>${a.name}</strong></td>
+    <td>${a.incoming.toLocaleString()}</td>
+    <td>${a.answered.toLocaleString()}</td>
+    <td>${a.missed.toLocaleString()}</td>
+    <td>${a.outgoing.toLocaleString()}</td>
+    <td><strong>${a.total.toLocaleString()}</strong></td>
+    <td>${makeBar(a.pAnswer, barColor)}</td>
+    <td>${fmtTalk(a.avgTalk)}</td>
+    <td>${a.avgWait}s</td>
+    <td>${getBadge(a.pAnswer)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+const shortLabels = agents.map(a => a.name.split('.')[0] + '.' + a.name.split('.')[1].charAt(0).toUpperCase());
+
+new Chart(document.getElementById('chartIncoming'), {
+  type: 'doughnut',
+  data: {
+    labels: agents.map(a => a.name),
+    datasets: [{
+      data: agents.map(a => a.incoming),
+      backgroundColor: ['#378ADD','#1D9E75','#BA7517','#E24B4A','#D4537E','#639922','#888780'],
+      borderWidth: 2, borderColor: 'transparent',
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'right', labels: { font: { size: 10 }, boxWidth: 10, padding: 8 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()} cuộc` } }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartRate'), {
+  type: 'bar',
+  data: {
+    labels: shortLabels,
+    datasets: [
+      { label: 'Nhấc máy', data: agents.map(a => +a.pAnswer.toFixed(1)), backgroundColor: colors.green },
+      { label: 'Nhỡ máy',  data: agents.map(a => +a.pMiss.toFixed(1)),  backgroundColor: colors.red },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { stacked: true, ticks: { font: { size: 10 } } },
+      y: { stacked: true, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } } }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartAvgTalk'), {
+  type: 'bar',
+  data: {
+    labels: shortLabels,
+    datasets: [{ label: 'TB đàm thoại', data: agents.map(a => a.avgTalk), backgroundColor: colors.blue, borderRadius: 3 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { ticks: { font: { size: 10 } } },
+      y: { ticks: { callback: v => fmtTalk(v), font: { size: 10 } }, beginAtZero: true }
+    },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmtTalk(ctx.parsed.y)}` } } }
+  }
+});
+
+new Chart(document.getElementById('chartWait'), {
+  type: 'bar',
+  data: {
+    labels: shortLabels,
+    datasets: [{ label: 'TB chờ (s)', data: agents.map(a => a.avgWait), backgroundColor: colors.amber, borderRadius: 3 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { ticks: { font: { size: 10 } } },
+      y: { ticks: { callback: v => v + 's', font: { size: 10 } }, beginAtZero: true }
+    },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} giây` } } }
+  }
+});
+</script>
+</body>
+</html>
